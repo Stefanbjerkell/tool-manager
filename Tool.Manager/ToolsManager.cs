@@ -44,9 +44,7 @@ namespace Tool.Manager
                 Documentation = JsonConvert.DeserializeObject<Dictionary<string,List<Documentation>>>(json)["help"];
             }
 
-            Config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .Build();
+            SetConfigFile("appsettings.json");
 
             Settings = new ToolsSettings()
             {
@@ -57,6 +55,8 @@ namespace Tool.Manager
 
             _tools ??= new List<ITool>();
             _tools.AddRange(tools);
+
+            Display.Init(Config.GetSection("display"));
         }
 
         public static void Run()
@@ -72,7 +72,7 @@ namespace Tool.Manager
                 }).ToList()
             };
 
-            Display.Init(Config.GetSection("display"));
+
             Display.DrawTop(Settings);
 
             ActivateTab(Tab.Menu);
@@ -81,6 +81,13 @@ namespace Tool.Manager
             {
                 RunMenu(menu);
             }
+        }
+
+        public static void SetConfigFile(string file)
+        {
+            Config = new ConfigurationBuilder()
+                .AddJsonFile(file)
+                .Build();
         }
 
         public static void RunMenu(Menu menu)
