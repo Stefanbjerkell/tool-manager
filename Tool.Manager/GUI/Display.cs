@@ -26,6 +26,16 @@ namespace Tool.Manager.GUI
 
         public static void Init(IConfiguration configuration)
         {
+            if(configuration is object)
+            {
+                if (configuration["width"] is object) Width = Convert.ToInt32(configuration["width"]);
+                if (configuration["height"] is object) Width = Convert.ToInt32(configuration["height"]);
+                if (configuration["menuWidth"] is object) Width = Convert.ToInt32(configuration["menuWidth"]);
+                if (configuration["menuHeight"] is object) Width = Convert.ToInt32(configuration["menuHeight"]);
+                if (configuration["dataWidth"] is object) Width = Convert.ToInt32(configuration["dataWidth"]);
+                if (configuration["topHeight"] is object) Width = Convert.ToInt32(configuration["topHeight"]);
+            }
+                       
             Console.SetWindowSize(Width, Height);
 
             Highlight(Tab.Top, false);
