@@ -1,0 +1,29 @@
+{
+  "help": [
+    {
+      "Group": "Controls",
+      "Key": "Arrow keys",
+      "Value": "Move up and down in menues"
+    },
+    {
+      "Group": "Controls",
+      "Key": "Enter",
+      "Value": "Select something in a menu or list, in console mode use enter to execute command"
+    },
+    {
+      "Group": "Controls",
+      "Key": "Space",
+      "Value": "Enter console mode. Write a empty command to jump back to menu mode."
+    },
+    {
+      "Group": "Controls",
+      "Key": "Page Up/Down",
+      "Value": "Use to fast flip pages in Tables and Lists view. (Only usable in the Data section)"
+    },
+    {
+      "Group": "Controls",
+      "Key": "Escape",
+      "Value": "Close current menu"
+    }
+  ]
+}
