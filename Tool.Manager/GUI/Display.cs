@@ -26,15 +26,20 @@ namespace Tool.Manager.GUI
 
         public static void Init(IConfiguration configuration)
         {
+            Console.Clear();
+
             if(configuration is object)
             {
                 if (configuration["width"] is object) Width = Convert.ToInt32(configuration["width"]);
-                if (configuration["height"] is object) Width = Convert.ToInt32(configuration["height"]);
-                if (configuration["menuWidth"] is object) Width = Convert.ToInt32(configuration["menuWidth"]);
-                if (configuration["menuHeight"] is object) Width = Convert.ToInt32(configuration["menuHeight"]);
-                if (configuration["dataWidth"] is object) Width = Convert.ToInt32(configuration["dataWidth"]);
-                if (configuration["topHeight"] is object) Width = Convert.ToInt32(configuration["topHeight"]);
+                if (configuration["height"] is object) Height = Convert.ToInt32(configuration["height"]);
+                if (configuration["menuWidth"] is object) MenuWidth = Convert.ToInt32(configuration["menuWidth"]);
+                if (configuration["menuHeight"] is object) MenuHeight = Convert.ToInt32(configuration["menuHeight"]);
+                if (configuration["dataWidth"] is object) DataWidth = Convert.ToInt32(configuration["dataWidth"]);
+                if (configuration["topHeight"] is object) TopHeight = Convert.ToInt32(configuration["topHeight"]);
             }
+
+            if (Height - TopHeight - MenuHeight < 3) 
+                throw new Exception($"No space for conssole. Please consider lowering TopHeight or MenuHight in configuration. | TotalHeight:{Height} | Menu + Top Height: {MenuHeight + TopHeight} | Space left for Console: {Height - MenuHeight - TopHeight} (Needs to be at least 3 but recomended is 5+)");
                        
             Console.SetWindowSize(Width, Height);
 
@@ -43,6 +48,18 @@ namespace Tool.Manager.GUI
             Highlight(Tab.Data, false);
             Highlight(Tab.Info, false);
             Highlight(Tab.Console, false);
+
+            DrawTop(ToolsManager.Settings);
+            if (ToolsManager.Menu is object)
+            {
+                DrawMenu(ToolsManager.Menu);
+                ToolsManager.SelectedMenuItem = ToolsManager.Menu.Items.First();
+            }
+            if (ToolsManager.Table is object)
+            {
+                ToolsManager.SelectedTalbeRow = null;
+                DrawTable(ToolsManager.Table, 0);
+            }
         }
 
         public static void Highlight(Tab tab, bool value = true)
@@ -85,7 +102,9 @@ namespace Tool.Manager.GUI
 
             Console.SetCursorPosition(pos.X, pos.Y + 2 + index);
             Console.ForegroundColor = deselect ? ConsoleColor.Gray : MenuSelectColor;
-            Console.Write(menuItem.Text);
+            var nesting = menuItem.Nesting > 0 ?
+                        "|" + new string('-', menuItem.Nesting) : "";
+            Console.Write(nesting + menuItem.Text);
 
             if (!deselect)
             {
@@ -153,12 +172,23 @@ namespace Tool.Manager.GUI
             Console.SetCursorPosition(pos.X, pos.Y + 1);
             Console.Write(new string('-', MenuWidth - 4));
 
-            Console.ForegroundColor = ConsoleColor.Gray;
+            
 
             for (int i = 0; i < menu.Items.Count; i++)
             {
                 Console.SetCursorPosition(pos.X, pos.Y + 2 + i);
-                Console.Write(menu.Items[i].Text);
+                if(menu.Items[i].Type == MenuItemType.Divider)
+                {
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write(new string('-', MenuWidth -4 ));
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    var nesting = menu.Items[i].Nesting > 0 ?
+                        "|" + new string('-', menu.Items[i].Nesting) : "";
+                    Console.Write(nesting + menu.Items[i].Text);
+                }
             }
         }
 
@@ -295,33 +325,41 @@ namespace Tool.Manager.GUI
         {
             ClearInfo();
 
-            Console.ForegroundColor = ConsoleColor.White;
-
             var pos = new Point(MenuWidth + DataWidth + 4, TopHeight + 1);
 
             var column1Width = info.Max(x => x.Key.Length);
             var column2Width = Width - MenuWidth - DataWidth - 5 - column1Width - 2;
             var row = 0;
 
-
-
             foreach (var item in info)
             {
                 row++;
 
-                Console.ForegroundColor = ConsoleColor.White;
-
                 Console.SetCursorPosition(pos.X, pos.Y + row);
+
+                // TODO! This is ugly. We should skip the Dictionary<string,string> and build seperate class with more flexibility.
+                if (item.Value == "[DIVIDER]")
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write(item.Key.ToUpper());
+                    row++;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.SetCursorPosition(pos.X, pos.Y + row);
+                    Console.Write(new string('-', column1Width + column2Width + 1));
+                    continue;
+                }
+
+                Console.ForegroundColor = ConsoleColor.White;
                 Console.Write(item.Key);
 
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
 
                 var text = item.Value ?? "";
-                while (text.Length > column2Width)
+                while (text.Length > column2Width - 1)
                 {
                     Console.SetCursorPosition(pos.X + column1Width + 2, pos.Y + row);
-                    Console.Write(text.Substring(0, column2Width));
-                    text = text.Substring(column2Width);
+                    Console.Write(text.Substring(0, column2Width - 1));
+                    text = text.Substring(column2Width - 1);
                     row++;
                 }
                 Console.SetCursorPosition(pos.X + column1Width + 2, pos.Y + row);
@@ -402,6 +440,7 @@ namespace Tool.Manager.GUI
                 var text = lines[lines.Count - 1 - i];
                 var space = Width - 4 - text.Length;
 
+                // TODO! This is ugly. We should create a class for log line with more flexibility.
                 if (text.StartsWith("!"))
                 {
                     color = ConsoleColor.Red;
@@ -419,6 +458,11 @@ namespace Tool.Manager.GUI
                 if (text.StartsWith("[s]"))
                 {
                     color = ConsoleColor.DarkGreen;
+                    text = text.Substring(3);
+                }
+                if (text.StartsWith("[i]"))
+                {
+                    color = ConsoleColor.DarkYellow;
                     text = text.Substring(3);
                 }
 

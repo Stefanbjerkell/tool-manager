@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Tool.Manager.GUI;
 using Tool.Manager.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Tool.Manager
 {
@@ -34,31 +35,28 @@ namespace Tool.Manager
 
         // Public interface
 
-        public static void Init(params ITool[] tools)
+        /// <summary>
+        /// This needs to be run before starting up the manager.
+        /// </summary>
+        /// <param name="serviceProvider"></param>
+        /// <param name="config"></param>
+        public static void Configure(IServiceProvider serviceProvider, IConfigurationRoot config)
         {
-            if (!File.Exists("appsettings.json")) throw new Exception("Please make sure there is a configurationfile called appsettings.json with all the basic confguration needed.");
-
+            Settings = new ToolsSettings();
             if (File.Exists("documentation.json"))
             {
                 var json = File.ReadAllText("documentation.json");
-                Documentation = JsonConvert.DeserializeObject<Dictionary<string,List<Documentation>>>(json)["help"];
+                Documentation = JsonConvert.DeserializeObject<Dictionary<string, List<Documentation>>>(json)["help"];
             }
-
-            SetConfigFile("appsettings.json");
-
-            Settings = new ToolsSettings()
-            {
-                Title = Config["application:name"],
-                Description = Config["application:description"],
-                Version = Config["application:version"]
-            };
-
             _tools ??= new List<ITool>();
-            _tools.AddRange(tools);
+            _tools.AddRange(serviceProvider.GetServices<ITool>());
 
-            Display.Init(Config.GetSection("display"));
+            SetConfiguration(config);
         }
 
+        /// <summary>
+        /// Start the tool Manager. Allowing the user to select a tool to use.
+        /// </summary>
         public static void Run()
         {
             var menu = new Menu()
@@ -72,41 +70,111 @@ namespace Tool.Manager
                 }).ToList()
             };
 
+            menu.Items.Add(new MenuItem()
+            {
+                Type = MenuItemType.Divider
+            });
+
+            menu.Items.Add(new MenuItem()
+            {
+                Text = "Help",
+                Description = "Show help section.",
+                Value = "HELP"
+            });
+
+            menu.Items.Add(new MenuItem()
+            {
+                Text = "Quit",
+                Description = "Close application.",
+                Value = "QUIT"
+            });
+
 
             Display.DrawTop(Settings);
 
             ActivateTab(Tab.Menu);
 
-            while (true)
+            while (Runnig)
             {
                 RunMenu(menu);
             }
         }
 
-        public static void SetConfigFile(string file)
+        /// <summary>
+        /// Override current configuration. This will re-configure all available ITool instances.
+        /// </summary>
+        /// <param name="config"></param>
+        public static void SetConfiguration(IConfigurationRoot config)
         {
-            Config = new ConfigurationBuilder()
-                .AddJsonFile(file)
-                .Build();
+            Config = config;
+            Settings.Title = Config["application:name"] ?? "Title (set in config [application:name])";
+            Settings.Description = Config["application:description"] ?? "Description (set in config [application:description])";
+            Settings.Version = Config["application:version"] ?? "Version (set in config [application:version])";
+            
+            Display.Init(config.GetSection("display"));
+            Display.DrawTop(Settings);
+
+            foreach (var tool in _tools)
+            {
+                tool.Configure(config);
+            }
         }
 
+        /// <summary>
+        /// Put program in User input mode. Allowing user to browse menues and entering commands. 
+        /// </summary>
+        /// <param name="menu"></param>
         public static void RunMenu(Menu menu)
         {
+            if (menu is null || !menu.Items.Any(x => x.Type == MenuItemType.Item)) return;
+
             SelectedMenuItem = null;
             Display.ClearMenu();
 
+            if (ActiveTool is object)
+            {
+                menu.Items.Add(new MenuItem()
+                {
+                    Type = MenuItemType.Divider
+                }); 
+
+                menu.Items.Add(new MenuItem()
+                {
+                    Text = "Help",
+                    Description = "Show help section.",
+                    Value = "HELP"
+                });
+
+                menu.Items.Add(new MenuItem()
+                {
+                    Text = "Back",
+                    Description = "Close this menu and go back to previous one.",
+                    Value = "BACK"
+                });
+            }
+
             Menu = menu;
             Display.DrawMenu(Menu);
+            SelectedMenuItem = Menu.Items.First(x => x.Type == MenuItemType.Item);
+            Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
+            
 
-            while (Runnig)
+            while (true)
             {
                 // This is to make sure we unload the tool when hitting the base menu.
-                if (Menu.Title == "Available Tools") ActiveTool = null;
+                if (Menu?.Title == "Available Tools") ActiveTool = null;
+
+                if(SelectedMenuItem is null)
+                {
+                    SelectedMenuItem = Menu.Items.First(x => x.Type == MenuItemType.Item);
+                    Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
+                }
+
 
                 if (ActiveTab == Tab.Console)
                 {
                     Display.DrawConsole(ConsoleLines);
-                    SetConsoleCurrsor(); 
+                    SetConsoleCurrsor();
 
                     if (ProcessCommand(Console.ReadLine()))
                     {
@@ -131,6 +199,25 @@ namespace Tool.Manager
                         if (ActiveTab == Tab.Menu)
                             if (SelectedMenuItem is object)
                             {
+                                if(SelectedMenuItem.Value == "BACK")
+                                {
+                                    Back();
+                                    return;
+                                }
+
+                                if (SelectedMenuItem.Value == "HELP")
+                                {
+                                    Help();
+                                    continue;
+                                }
+
+                                if (SelectedMenuItem.Value == "QUIT")
+                                {
+                                    Runnig = false;
+                                    Back();
+                                    return;
+                                }
+
                                 if (MenuExecute(SelectedMenuItem))
                                 {
                                     Menu = menu;
@@ -144,7 +231,22 @@ namespace Tool.Manager
                                 TableRowClick(SelectedTalbeRow);
                             }
                         if (ActiveTab == Tab.Top)
-                            Display.DrawInfo(Settings.Info);
+                        {
+                            var info = new Dictionary<string, string>();
+
+                            info.Add("Top Information", "[DIVIDER]");
+                            foreach(var item in Settings.Info)
+                            {
+                                info.Add(item.Key, item.Value);
+                            }
+                            info.Add("Stored Data", "[DIVIDER]");
+                            foreach (var item in Settings.Data)
+                            {
+                                info.Add(item.Key, item.Value.ToString());
+                            }
+
+                            Display.DrawInfo(info);
+                        }
 
                         break;
 
@@ -193,6 +295,19 @@ namespace Tool.Manager
             }
         }
 
+        /// <summary>
+        /// Use this to update menu and redraw it.
+        /// </summary>
+        /// <param name="menu"></param>
+        public static void UpdateMenu(Menu menu)
+        {
+            Menu = menu;
+            Display.DrawMenu(Menu);
+        }
+
+        /// <summary>
+        /// Close current menu and jump back the the previous one.
+        /// </summary>
         public static void Back()
         {
             Menu = null;
@@ -203,40 +318,10 @@ namespace Tool.Manager
             SelectedTalbeRow = null;
         }
 
-        public static bool MenuExecute(MenuItem item)
-        {
-            try
-            {
-                if (ActiveTool is object)
-                {
-
-                    if (ActiveTool.ExecuteMenuItem(item).Result)
-                        return true;
-                }
-
-                foreach (var tool in _tools)
-                {
-                    if (item.Value == tool.Id)
-                    {
-                        ActiveTool = tool;
-                        tool.Init();
-                        return true;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex);
-            }
-
-            return false;
-        }
-
-        public static void TableRowClick(TableRow row)
-        {
-            if (ActiveTool is object) ActiveTool.RowClick(row, Table);
-        }
-
+        /// <summary>
+        /// Loads a table into the data view.
+        /// </summary>
+        /// <param name="table"></param>
         public static void LoadTable(Table table)
         {
             try
@@ -262,6 +347,10 @@ namespace Tool.Manager
             }
         }
 
+        /// <summary>
+        /// Writes a line to Console.
+        /// </summary>
+        /// <param name="text"></param>
         public static void Log(string text)
         {
             ConsoleLines.Add(text);
@@ -272,6 +361,9 @@ namespace Tool.Manager
             }
         }
 
+        /// <summary>
+        /// Shows help menu.
+        /// </summary>
         public static void Help()
         {
             var documentation = Documentation;
@@ -291,17 +383,111 @@ namespace Tool.Manager
             {
                 table.Rows.Add(new TableRow() { Id = group.Key, GroupHeader = group.Key, Info = new Dictionary<string, string>() { { "Group name", group.Key }, { "Description", "This is a section header for grouping together help entries." } } });
                 table.Rows.AddRange(group.Select(x =>
-                new TableRow() { 
-                    Id = group.Key, 
-                    Values = new List<string>() {  x.Key, x.Value }, Info = new Dictionary<string, string>() { { "Name", x.Key }, { "Description", x.Value }
-                    } }));
+                new TableRow()
+                {
+                    Id = group.Key,
+                    Values = new List<string>() { x.Key, x.Value },
+                    Info = new Dictionary<string, string>() { { "Name", x.Key }, { "Description", x.Value }
+                    }
+                }));
             }
 
             LoadTable(table);
             ActivateTab(Tab.Data);
         }
 
+        /// <summary>
+        /// Write stuff in Info tab.
+        /// </summary>
+        /// <param name="info"></param>
+        public static void ShowInfo(Dictionary<string, string> info)
+        {
+            Display.DrawInfo(info);
+        }
+
+        /// <summary>
+        /// Ask user for input. 
+        /// </summary>
+        /// <param name="promptMessage"></param>
+        /// <returns></returns>
+        public static string PromtInput(string promptMessage)
+        {
+            var recentTab = ActiveTab;
+
+            ActivateTab(Tab.Console);
+
+            ConsoleLines.Add("?" + promptMessage);
+            Display.DrawConsole(ConsoleLines);
+
+            SetConsoleCurrsor();
+            var response = Console.ReadLine();
+            ConsoleLines.Add(">> " + response);
+            Display.DrawConsole(ConsoleLines);
+
+            ActivateTab(recentTab);
+
+            return response;
+
+        }
+
+        /// <summary>
+        /// Ask the user a yes or no question.
+        /// </summary>
+        /// <param name="promtMessge"></param>
+        /// <returns></returns>
+        public static bool PromtYesOrNo(string promtMessge)
+        {
+            var answer = PromtInput(promtMessge);
+            while (true)
+            {
+                
+                if (answer.ToLower().Contains("yes") || answer.ToLower() == "y")
+                {
+                    return true;
+                }
+                if (answer.ToLower().Contains("no") || answer.ToLower() == "n")
+                {
+                    return false;
+                }
+                answer = PromtInput(promtMessge + " (Yes/No)");
+            }
+        }
+
         // Private 
+        private static bool MenuExecute(MenuItem item)
+        {
+            try
+            {
+                if (ActiveTool is object)
+                {
+
+                    if (ActiveTool.ExecuteMenuItem(item).Result)
+                        return true;
+                }
+
+                foreach (var tool in _tools)
+                {
+                    if (item.Value == tool.Id)
+                    {
+                        ActiveTool = tool;
+                        tool.Run();
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void TableRowClick(TableRow row)
+        {
+            if (ActiveTool is object) ActiveTool.RowClick(row, Table);
+        }
 
         private enum Direction { Up, Down }
 
@@ -309,15 +495,10 @@ namespace Tool.Manager
         {
             var oldSelection = SelectedMenuItem;
 
-            if (SelectedMenuItem is null)
-            {
-                SelectedMenuItem = Menu.Items.First();
-
-            }
-            else if (direction == Direction.Up)
+            if (direction == Direction.Up)
             {
                 if (SelectedMenuItem == Menu.Items.First()) return;
-                SelectedMenuItem = Menu.Items[Menu.Items.IndexOf(oldSelection) - 1];
+                SelectedMenuItem = Menu.Items[Menu.Items.IndexOf(oldSelection) - 1];                
             }
             else if (direction == Direction.Down)
             {
@@ -325,8 +506,18 @@ namespace Tool.Manager
                 SelectedMenuItem = Menu.Items[Menu.Items.IndexOf(oldSelection) + 1];
             }
 
+            if (SelectedMenuItem.Type == MenuItemType.Divider || SelectedMenuItem.Type == MenuItemType.Headline)
+            {
+                MenuMove(direction);
+                if (SelectedMenuItem.Type == MenuItemType.Divider)
+                {
+                    SelectedMenuItem = oldSelection;
+                    return;
+                }
+            }
+
             if (oldSelection != null) Display.MenuSelect(oldSelection, Menu.Items.IndexOf(oldSelection), true);
-            Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
+            if(oldSelection != null && oldSelection.Type == MenuItemType.Item) Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
         }
 
         private static void DataMove(Direction direction)
@@ -403,7 +594,7 @@ namespace Tool.Manager
             }
 
             ConsoleLines.Add(">> " + command);
-            
+
             if (command.ToLower() == "help")
             {
                 Help();
@@ -444,7 +635,7 @@ namespace Tool.Manager
                 }
             }
 
-            
+
 
             ConsoleLines.Add("!Could not recognize command! Try again");
 
@@ -462,27 +653,7 @@ namespace Tool.Manager
             ActiveTab = tab;
             Display.Highlight(tab, true);
         }
-
-        public static string PromtInput(string promptMessage)
-        {
-            var recentTab = ActiveTab;
-
-            ActivateTab(Tab.Console);
-
-            ConsoleLines.Add("?" + promptMessage);
-            Display.DrawConsole(ConsoleLines);
-
-            SetConsoleCurrsor();
-            var response = Console.ReadLine();
-            ConsoleLines.Add(">> " + response);
-            Display.DrawConsole(ConsoleLines);
-
-            ActivateTab(recentTab);
-
-            return response;
-
-        }
-
+               
         private static void SetConsoleCurrsor()
         {
             var pos = Display.GetConsolePosition();
@@ -495,7 +666,6 @@ namespace Tool.Manager
             ConsoleLines.Add("!" + ex.Message);
             Display.DrawConsole(ConsoleLines);
         }
-
 
     }
 }

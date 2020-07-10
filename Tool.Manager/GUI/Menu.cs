@@ -13,10 +13,21 @@ namespace Tool.Manager.GUI
 
     public class MenuItem
     {
+        public MenuItemType Type { get; set; } = MenuItemType.Item;
+
         public string Description { get; set; }
 
         public string Text { get; set; }
 
         public string Value { get; set; }
+
+        public int Nesting { get; set; }
+    }
+
+    public enum MenuItemType
+    {
+        Item,
+        Divider,
+        Headline,
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,9 @@ namespace Tool.Manager.Interfaces
 
         List<Documentation> Documentation { get; set; }
 
-        Task Init();
+        Task Run();
+
+        void Configure(IConfigurationRoot config);
 
         Task<bool> ExecuteCommand(string command);
 

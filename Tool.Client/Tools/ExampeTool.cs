@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Tool.Manager;
 using Tool.Manager.GUI;
@@ -11,6 +11,8 @@ namespace Tool.Client.Tools
 {
     public class ExampeTool : ToolBase, ITool
     {
+        private IConfiguration _config;
+
         public ExampeTool() : base("Example tool", "Tool to show of some of the features supported", "TEST")
         {
 
@@ -60,6 +62,9 @@ namespace Tool.Client.Tools
 
                     return true;
                 case "CONFIG":
+                    var file = ToolsManager.PromtInput("Select a new config file (json) to use");
+                    var config = new ConfigurationBuilder().AddJsonFile(file).Build();
+                    ToolsManager.SetConfiguration(config);
                     return true;
                 default:
                     return false;
@@ -71,7 +76,12 @@ namespace Tool.Client.Tools
             ToolsManager.Log("Info [" + value.Key + "] + [" + value.Value + "]");
         }
 
-        public async Task Init()
+        public void Configure(IConfigurationRoot config)
+        {
+            _config = config;
+        }
+
+        public async Task Run()
         {
             ToolsManager.Log("Starting [" + Name + "]");
 
@@ -80,9 +90,10 @@ namespace Tool.Client.Tools
                 Title = "Example Commands",
                 Items = new List<MenuItem>()
                 {
+                    new MenuItem() { Type = MenuItemType.Divider },
                     new MenuItem() { Text = "Table", Description = "Loads a dataset in to a scrollabel table.", Value = "TABLE" },
-                    new MenuItem() { Text = "Top info", Description = "Show information in Top bar", Value = "TOP" },
-                    new MenuItem() { Text = "Change configuration", Description = "Change the configration file to use other settings", Value = "CONFIG" }
+                    new MenuItem() { Text = "Top info", Description = "Show information in Top bar", Value = "TOP", Nesting = 1 },
+                    new MenuItem() { Text = "Change configuration", Description = "Change the configration file to use other settings", Value = "CONFIG", Nesting = 2 }
                 }
             });
         }

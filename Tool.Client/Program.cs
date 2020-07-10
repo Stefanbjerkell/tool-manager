@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using Tool.Client.Tools;
 using Tool.Manager;
+using Tool.Manager.Interfaces;
 
 namespace Tool.Client
 {
@@ -8,8 +11,15 @@ namespace Tool.Client
     {
         static void Main(string[] args)
         {
-            ToolsManager.Init(new ExampeTool());
+            var serviceProvider = new ServiceCollection()
+            .AddSingleton<ITool, ExampeTool>()
+            .BuildServiceProvider();
 
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            ToolsManager.Configure(serviceProvider, config);
             ToolsManager.Run();
         }
     }
