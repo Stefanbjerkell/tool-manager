@@ -2,28 +2,48 @@
   "help": [
     {
       "Group": "Controls",
-      "Key": "Arrow keys",
+      "Key": "[Up/Down]",
       "Value": "Move up and down in menues"
     },
     {
       "Group": "Controls",
-      "Key": "Enter",
+      "Key": "[Left/Right]",
+      "Value": "Jump between tabs"
+    },
+    {
+      "Group": "Controls",
+      "Key": "[Enter]",
       "Value": "Select something in a menu or list, in console mode use enter to execute command"
     },
     {
       "Group": "Controls",
-      "Key": "Space",
+      "Key": "[Space]",
       "Value": "Enter console mode. Write a empty command to jump back to menu mode."
     },
     {
       "Group": "Controls",
-      "Key": "Page Up/Down",
+      "Key": "[Page Up/Down]",
       "Value": "Use to fast flip pages in Tables and Lists view. (Only usable in the Data section)"
     },
     {
       "Group": "Controls",
-      "Key": "Escape",
+      "Key": "[Escape]",
       "Value": "Close current menu"
+    },
+    {
+      "Group": "Commands",
+      "Key": "[back][..]",
+      "Value": "Close current menu"
+    },
+    {
+      "Group": "Commands",
+      "Key": "[help]",
+      "Value": "Shows this menu"
+    },
+    {
+      "Group": "Commands",
+      "Key": "[redraw][draw]",
+      "Value": "Redraws the screen. Use in case the display gets messed up. This can sometimes happen when changing window size or moving console window to another screen"
     }
   ]
 }

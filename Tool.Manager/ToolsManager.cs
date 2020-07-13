@@ -77,6 +77,7 @@ namespace Tool.Manager
 
             menu.Items.Add(new MenuItem()
             {
+                Color = ConsoleColor.DarkCyan,
                 Text = "Help",
                 Description = "Show help section.",
                 Value = "HELP"
@@ -84,6 +85,7 @@ namespace Tool.Manager
 
             menu.Items.Add(new MenuItem()
             {
+                Color = ConsoleColor.DarkCyan,
                 Text = "Quit",
                 Description = "Close application.",
                 Value = "QUIT"
@@ -110,7 +112,7 @@ namespace Tool.Manager
             Settings.Title = Config["application:name"] ?? "Title (set in config [application:name])";
             Settings.Description = Config["application:description"] ?? "Description (set in config [application:description])";
             Settings.Version = Config["application:version"] ?? "Version (set in config [application:version])";
-            
+
             Display.Init(config.GetSection("display"));
             Display.DrawTop(Settings);
 
@@ -136,10 +138,11 @@ namespace Tool.Manager
                 menu.Items.Add(new MenuItem()
                 {
                     Type = MenuItemType.Divider
-                }); 
+                });
 
                 menu.Items.Add(new MenuItem()
                 {
+                    Color = ConsoleColor.DarkCyan,
                     Text = "Help",
                     Description = "Show help section.",
                     Value = "HELP"
@@ -147,6 +150,7 @@ namespace Tool.Manager
 
                 menu.Items.Add(new MenuItem()
                 {
+                    Color = ConsoleColor.DarkCyan,
                     Text = "Back",
                     Description = "Close this menu and go back to previous one.",
                     Value = "BACK"
@@ -157,14 +161,14 @@ namespace Tool.Manager
             Display.DrawMenu(Menu);
             SelectedMenuItem = Menu.Items.First(x => x.Type == MenuItemType.Item);
             Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
-            
+
 
             while (true)
             {
                 // This is to make sure we unload the tool when hitting the base menu.
                 if (Menu?.Title == "Available Tools") ActiveTool = null;
 
-                if(SelectedMenuItem is null)
+                if (menu is object && SelectedMenuItem is null)
                 {
                     SelectedMenuItem = Menu.Items.First(x => x.Type == MenuItemType.Item);
                     Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
@@ -199,7 +203,7 @@ namespace Tool.Manager
                         if (ActiveTab == Tab.Menu)
                             if (SelectedMenuItem is object)
                             {
-                                if(SelectedMenuItem.Value == "BACK")
+                                if (SelectedMenuItem.Value == "BACK")
                                 {
                                     Back();
                                     return;
@@ -233,16 +237,22 @@ namespace Tool.Manager
                         if (ActiveTab == Tab.Top)
                         {
                             var info = new Dictionary<string, string>();
+                            if (Settings.Info is object)
+                            {
 
-                            info.Add("Top Information", "[DIVIDER]");
-                            foreach(var item in Settings.Info)
-                            {
-                                info.Add(item.Key, item.Value);
+                                info.Add("Top Information", "[DIVIDER]");
+                                foreach (var item in Settings.Info)
+                                {
+                                    info.Add(item.Key, item.Value);
+                                }
                             }
-                            info.Add("Stored Data", "[DIVIDER]");
-                            foreach (var item in Settings.Data)
+                            if (Settings.Data is object)
                             {
-                                info.Add(item.Key, item.Value.ToString());
+                                info.Add("Stored Data", "[DIVIDER]");
+                                foreach (var item in Settings.Data)
+                                {
+                                    info.Add(item.Key, item.Value.ToString());
+                                }
                             }
 
                             Display.DrawInfo(info);
@@ -440,7 +450,7 @@ namespace Tool.Manager
             var answer = PromtInput(promtMessge);
             while (true)
             {
-                
+
                 if (answer.ToLower().Contains("yes") || answer.ToLower() == "y")
                 {
                     return true;
@@ -498,7 +508,7 @@ namespace Tool.Manager
             if (direction == Direction.Up)
             {
                 if (SelectedMenuItem == Menu.Items.First()) return;
-                SelectedMenuItem = Menu.Items[Menu.Items.IndexOf(oldSelection) - 1];                
+                SelectedMenuItem = Menu.Items[Menu.Items.IndexOf(oldSelection) - 1];
             }
             else if (direction == Direction.Down)
             {
@@ -517,7 +527,7 @@ namespace Tool.Manager
             }
 
             if (oldSelection != null) Display.MenuSelect(oldSelection, Menu.Items.IndexOf(oldSelection), true);
-            if(oldSelection != null && oldSelection.Type == MenuItemType.Item) Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
+            if (oldSelection != null && oldSelection.Type == MenuItemType.Item) Display.MenuSelect(SelectedMenuItem, Menu.Items.IndexOf(SelectedMenuItem));
         }
 
         private static void DataMove(Direction direction)
@@ -601,7 +611,14 @@ namespace Tool.Manager
                 return true;
             }
 
-            if (command.ToLower() == "back" || command.ToLower() == "quit")
+            if (command.ToLower() == "draw" || command.ToLower() == "redraw")
+            {
+                Display.Init(Config);
+                Display.Highlight(ActiveTab);
+                return true;
+            }
+
+            if (command.ToLower() == "back" || command.ToLower() == "..")
             {
                 Back();
                 Display.DrawConsole(ConsoleLines);
@@ -623,7 +640,7 @@ namespace Tool.Manager
                 }
             }
 
-            var menuItem = Menu.Items.FirstOrDefault(x => x.Text.ToLower().StartsWith(command.ToLower()));
+            var menuItem = Menu.Items.FirstOrDefault(x => x.Type == MenuItemType.Item && (x.Text.ToLower().StartsWith(command.ToLower()) || x.Value.ToLower().StartsWith(command.ToLower())));
             if (menuItem is object)
             {
                 ConsoleLines.Add("Executing: [" + menuItem.Text + "]");
@@ -653,7 +670,7 @@ namespace Tool.Manager
             ActiveTab = tab;
             Display.Highlight(tab, true);
         }
-               
+
         private static void SetConsoleCurrsor()
         {
             var pos = Display.GetConsolePosition();

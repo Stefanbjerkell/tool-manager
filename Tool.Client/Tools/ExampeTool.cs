@@ -92,8 +92,8 @@ namespace Tool.Client.Tools
                 {
                     new MenuItem() { Type = MenuItemType.Divider },
                     new MenuItem() { Text = "Table", Description = "Loads a dataset in to a scrollabel table.", Value = "TABLE" },
-                    new MenuItem() { Text = "Top info", Description = "Show information in Top bar", Value = "TOP", Nesting = 1 },
-                    new MenuItem() { Text = "Change configuration", Description = "Change the configration file to use other settings", Value = "CONFIG", Nesting = 2 }
+                    new MenuItem() { Text = "Top info", Description = "Show information in Top bar", Value = "TOP"},
+                    new MenuItem() { Text = "Change configuration", Description = "Change the configration file to use other settings", Value = "CONFIG"}
                 }
             });
         }

@@ -13,6 +13,8 @@ namespace Tool.Manager.GUI
 
     public class MenuItem
     {
+        public ConsoleColor Color { get; set; } = ConsoleColor.DarkYellow;
+
         public MenuItemType Type { get; set; } = MenuItemType.Item;
 
         public string Description { get; set; }
@@ -21,6 +23,7 @@ namespace Tool.Manager.GUI
 
         public string Value { get; set; }
 
+        // TODO! Have actual nesting of menu items instead of this int.
         public int Nesting { get; set; }
     }
 

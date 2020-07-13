@@ -101,10 +101,14 @@ namespace Tool.Manager.GUI
             var pos = new Point(2, TopHeight + 2);
 
             Console.SetCursorPosition(pos.X, pos.Y + 2 + index);
-            Console.ForegroundColor = deselect ? ConsoleColor.Gray : MenuSelectColor;
+            
             var nesting = menuItem.Nesting > 0 ?
                         "|" + new string('-', menuItem.Nesting) : "";
-            Console.Write(nesting + menuItem.Text);
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(nesting);
+            Console.ForegroundColor = deselect ? menuItem.Color : MenuSelectColor;
+            Console.Write(menuItem.Text);
 
             if (!deselect)
             {
@@ -184,10 +188,12 @@ namespace Tool.Manager.GUI
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Gray;
                     var nesting = menu.Items[i].Nesting > 0 ?
                         "|" + new string('-', menu.Items[i].Nesting) : "";
-                    Console.Write(nesting + menu.Items[i].Text);
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write(nesting);
+                    Console.ForegroundColor = menu.Items[i].Color;
+                    Console.Write(menu.Items[i].Text);
                 }
             }
         }
@@ -412,12 +418,14 @@ namespace Tool.Manager.GUI
 
             if(settings.Info != null && settings.Info.Any())
             {
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
                 var count = 0;
                 foreach(var info in settings.Info)
                 {
                     Console.SetCursorPosition(pos.X + Width - (info.Key.Length + info.Value.Length) - 13, pos.Y + count);
-                    Console.Write($"{info.Key} [{info.Value}]");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"{info.Key}");
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.Write($" [{info.Value}]");
 
                     if (count > TopHeight - 3) break;
                     count++;
