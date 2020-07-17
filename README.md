@@ -10,15 +10,15 @@ It comes witha a menu system that you can easy use to have the user select somet
 
 The Tab system splits the sceen into 5 diffrent areas that the user can jump between.
 
-There is the top bar that will show the name and description of your application and some optional information. 
+- There is the top bar that will show the name and description of your application and some optional information. 
 
-You have a menu section where the user can navigate through your tools functions.
+- You have a menu section where the user can navigate through your tools functions.
 
-A data tab where you can display tables or lists with data that the user can scoll through and select rows. 
+- A data tab where you can display tables or lists with data that the user can scoll through and select rows. 
 
-Info box for showing various information.
+- Info box for showing various information.
 
-And lastly there is a console section where the user can type commands and you can show messages for the user.
+- And lastly there is a console section where the user can type commands and you can show messages for the user.
 
 ## Installation / Usage
 
@@ -59,6 +59,8 @@ Here are the helpers that the tools manager can help out with.
 - **PromtInput(string question)** - Ask the user for input value. Returns input string.
 
 - **PromtYesOrNo(string question)** - Ask the user a yes or no questions. Returns bool.
+
+- **Log(string text)** - Prints a row in consolse tab. There are some hacks here to controll color of the log lines, this will be improved in the future but right now you can prefix your text with the following symobls to choose color. '!' will put red color on the log. '\[s\]' will put green color and '\[i\]' will use yellow color. Everything within braccets will be shown in cyan color.
 
 - **ToolsManager.Back()** - This will close the current menu and go back the prevoius one.
 
