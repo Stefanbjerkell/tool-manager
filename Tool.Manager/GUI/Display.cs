@@ -28,7 +28,7 @@ namespace Tool.Manager.GUI
         {
             Console.Clear();
 
-            if(configuration is object)
+            if (configuration is object)
             {
                 if (configuration["width"] is object) Width = Convert.ToInt32(configuration["width"]);
                 if (configuration["height"] is object) Height = Convert.ToInt32(configuration["height"]);
@@ -38,9 +38,9 @@ namespace Tool.Manager.GUI
                 if (configuration["topHeight"] is object) TopHeight = Convert.ToInt32(configuration["topHeight"]);
             }
 
-            if (Height - TopHeight - MenuHeight < 3) 
+            if (Height - TopHeight - MenuHeight < 3)
                 throw new Exception($"No space for conssole. Please consider lowering TopHeight or MenuHight in configuration. | TotalHeight:{Height} | Menu + Top Height: {MenuHeight + TopHeight} | Space left for Console: {Height - MenuHeight - TopHeight} (Needs to be at least 3 but recomended is 5+)");
-                       
+
             Console.SetWindowSize(Width, Height);
 
             Highlight(Tab.Top, false);
@@ -101,7 +101,7 @@ namespace Tool.Manager.GUI
             var pos = new Point(2, TopHeight + 2);
 
             Console.SetCursorPosition(pos.X, pos.Y + 2 + index);
-            
+
             var nesting = menuItem.Nesting > 0 ?
                         "|" + new string('-', menuItem.Nesting) : "";
 
@@ -112,10 +112,9 @@ namespace Tool.Manager.GUI
 
             if (!deselect)
             {
-                DrawInfo(new Dictionary<string, string> {
-                    { "Command", menuItem.Text },
-                    { "Description", menuItem.Description },
-                    { "Value", menuItem.Value } });
+                DrawInfo(new List<InfoRow>() {
+                    new InfoRow("Command", menuItem.Text),
+                    new InfoRow("Description", menuItem.Description) });
             }
 
         }
@@ -125,7 +124,7 @@ namespace Tool.Manager.GUI
             var pos = new Point(MenuWidth + 4, TopHeight + 4);
 
             Console.SetCursorPosition(pos.X, pos.Y + 2 + index);
-            Console.ForegroundColor = deselect ? string.IsNullOrEmpty(row.GroupHeader) ? ConsoleColor.Gray : ConsoleColor.DarkCyan : MenuSelectColor;
+            Console.ForegroundColor = deselect ? row.Color : MenuSelectColor;
 
             var line = "";
 
@@ -176,15 +175,15 @@ namespace Tool.Manager.GUI
             Console.SetCursorPosition(pos.X, pos.Y + 1);
             Console.Write(new string('-', MenuWidth - 4));
 
-            
+
 
             for (int i = 0; i < menu.Items.Count; i++)
             {
                 Console.SetCursorPosition(pos.X, pos.Y + 2 + i);
-                if(menu.Items[i].Type == MenuItemType.Divider)
+                if (menu.Items[i].Type == MenuItemType.Divider)
                 {
                     Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write(new string('-', MenuWidth -4 ));
+                    Console.Write(new string('-', MenuWidth - 4));
                 }
                 else
                 {
@@ -268,21 +267,18 @@ namespace Tool.Manager.GUI
 
             // Draw Rows.
 
-
-
             var index = 0;
             foreach (var row in table.Rows.Where(x => table.Rows.IndexOf(x) >= (maxRows * page)))
             {
                 var line = "";
+                Console.ForegroundColor = row.Color;
 
                 if (!string.IsNullOrEmpty(row.GroupHeader))
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkCyan;
                     line = row.GroupHeader.ToUpper();
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Gray;
                     for (int i = 0; i < table.Columns.Count; i++)
                     {
                         var value = row.Values[i] ?? "";
@@ -327,27 +323,41 @@ namespace Tool.Manager.GUI
             }
         }
 
-        public static void DrawInfo(Dictionary<string, string> info)
+        public static void DrawInfo(List<InfoRow> rows)
         {
             ClearInfo();
 
             var pos = new Point(MenuWidth + DataWidth + 4, TopHeight + 1);
+            var infoWidth = Width - MenuWidth - DataWidth - 4;
+            var maxColumn1Width = infoWidth / 2;
 
-            var column1Width = info.Max(x => x.Key.Length);
-            var column2Width = Width - MenuWidth - DataWidth - 5 - column1Width - 2;
+            var column1Width = rows.Max(x => x.Key.Length);
+            if (column1Width > maxColumn1Width) column1Width = maxColumn1Width;
+
+            var column2Width = infoWidth - column1Width - 3;
             var row = 0;
 
-            foreach (var item in info)
+            foreach (var item in rows)
             {
                 row++;
 
                 Console.SetCursorPosition(pos.X, pos.Y + row);
 
-                // TODO! This is ugly. We should skip the Dictionary<string,string> and build seperate class with more flexibility.
-                if (item.Value == "[DIVIDER]")
+                if (item.Type == InfoRowType.Title)
+                {
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write(item.Key.ToUpper());
+                    row++;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.SetCursorPosition(pos.X, pos.Y + row);
+                    Console.Write(new string('=', column1Width + column2Width + 1));
+                    continue;
+                }
+
+                if (item.Type == InfoRowType.Section)
                 {
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.Write(item.Key.ToUpper());
+                    Console.Write(item.Key);
                     row++;
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.SetCursorPosition(pos.X, pos.Y + row);
@@ -355,10 +365,16 @@ namespace Tool.Manager.GUI
                     continue;
                 }
 
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write(item.Key);
+                if (item.Type == InfoRowType.Divider)
+                {
+                    Console.Write(new string('-', column1Width + column2Width + 1));
+                    continue;
+                }
 
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.ForegroundColor = item.Color.HasValue ? item.Color.Value : ConsoleColor.White;
+                Console.Write(item.Key.Length > column1Width ? item.Key.Substring(0, column1Width -3) + "..." : item.Key);
+
+                Console.ForegroundColor = item.Color.HasValue ? item.Color.Value : ConsoleColor.DarkCyan;
 
                 var text = item.Value ?? "";
                 while (text.Length > column2Width - 1)
@@ -372,6 +388,11 @@ namespace Tool.Manager.GUI
                 Console.Write(text);
             }
             Console.ResetColor();
+        }
+
+        public static void DrawInfo(Dictionary<string, string> info)
+        {
+            DrawInfo(info.Select(x => new InfoRow(x.Value, x.Key)).ToList());
         }
 
         public static void ClearInfo()
@@ -416,10 +437,10 @@ namespace Tool.Manager.GUI
             Console.SetCursorPosition(pos.X + 8, pos.Y + 2);
             Console.Write("Version " + settings.Version);
 
-            if(settings.Info != null && settings.Info.Any())
+            if (settings.Info != null && settings.Info.Any())
             {
                 var count = 0;
-                foreach(var info in settings.Info)
+                foreach (var info in settings.Info)
                 {
                     Console.SetCursorPosition(pos.X + Width - (info.Key.Length + info.Value.Length) - 13, pos.Y + count);
                     Console.ForegroundColor = ConsoleColor.White;
@@ -440,7 +461,9 @@ namespace Tool.Manager.GUI
             Console.SetCursorPosition(pos.X, pos.Y);
             Console.Write(new string(' ', Width - 4));
 
-            for (int i = 0; i < 6 && i < lines.Count; i++)
+            var maxLines = Height - TopHeight - MenuHeight - 5;
+
+            for (int i = 0; i < maxLines && i < lines.Count; i++)
             {
                 var color = ConsoleColor.White;
 

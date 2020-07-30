@@ -31,6 +31,8 @@ namespace Tool.Manager
         public static MenuItem SelectedMenuItem;
         public static TableRow SelectedTalbeRow;
 
+        private static string TableFilter = "";
+
         private static List<Documentation> Documentation { get; set; } = new List<Documentation>();
 
         // Public interface
@@ -236,22 +238,24 @@ namespace Tool.Manager
                             }
                         if (ActiveTab == Tab.Top)
                         {
-                            var info = new Dictionary<string, string>();
+                            var info = new List<InfoRow>();
+                            info.Add(new InfoRow("Global Data", "Flobal Data", InfoRowType.Title));
+
                             if (Settings.Info is object)
                             {
 
-                                info.Add("Top Information", "[DIVIDER]");
+                                info.Add(new InfoRow("Information", "Information", InfoRowType.Section));
                                 foreach (var item in Settings.Info)
                                 {
-                                    info.Add(item.Key, item.Value);
+                                    info.Add(new InfoRow(item.Key, item.Value));
                                 }
                             }
                             if (Settings.Data is object)
                             {
-                                info.Add("Stored Data", "[DIVIDER]");
+                                info.Add(new InfoRow("Data", "Stored Data", InfoRowType.Section));
                                 foreach (var item in Settings.Data)
                                 {
-                                    info.Add(item.Key, item.Value.ToString());
+                                    info.Add(new InfoRow(item.Key, item.Value.ToString()));
                                 }
                             }
 
@@ -300,7 +304,45 @@ namespace Tool.Manager
                         SetConsoleCurrsor();
                         break;
                     default:
+                        if (ActiveTab == Tab.Data)
+                            QuickSelect(key);
                         break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Jump to first table row matching typed text.
+        /// </summary>
+        /// <param name="key"></param>
+        private static void QuickSelect(ConsoleKeyInfo key)
+        {
+            if (char.IsLetterOrDigit(key.KeyChar) && Table != null)
+            {
+                TableFilter += key.KeyChar;
+                
+                var row = Table.Rows.FirstOrDefault(x => string.IsNullOrEmpty(x.GroupHeader) && x.Values.Any(r => r.ToLower().Contains(TableFilter.ToLower())));
+
+                if (row is object)
+                {
+                    var maxRows = Display.GetMaxTableRows();
+                    var index = Table.Rows.IndexOf(row);
+                    var pageOfRow = index / maxRows;
+
+                    if(pageOfRow == TablePage)
+                    {
+                        var oldSelection = SelectedTalbeRow;
+                        if (oldSelection is object && pageOfRow == TablePage)
+                            Display.RowSelect(oldSelection, Table.Rows.IndexOf(oldSelection), true);
+                        SelectedTalbeRow = row;
+                    }
+                    else
+                    {
+                        SelectedTalbeRow = row;
+                        TablePage = pageOfRow;
+                        Display.DrawTable(Table, TablePage);
+                    }                    
+                    Display.RowSelect(SelectedTalbeRow, index - (maxRows * TablePage));
                 }
             }
         }
@@ -336,6 +378,7 @@ namespace Tool.Manager
         {
             try
             {
+                TableFilter = "";
                 Table = table;
                 TablePage = 0;
 
@@ -496,6 +539,7 @@ namespace Tool.Manager
 
         private static void TableRowClick(TableRow row)
         {
+            TableFilter = "";
             if (ActiveTool is object) ActiveTool.RowClick(row, Table);
         }
 
@@ -532,6 +576,7 @@ namespace Tool.Manager
 
         private static void DataMove(Direction direction)
         {
+            TableFilter = "";
             if (Table is null) return;
 
             var oldSelection = SelectedTalbeRow;
@@ -579,6 +624,7 @@ namespace Tool.Manager
 
         private static void DataScroll(Direction direction)
         {
+            TableFilter = "";
             if (direction == Direction.Up && TablePage > 0)
             {
                 TablePage--;

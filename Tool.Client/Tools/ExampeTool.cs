@@ -46,7 +46,12 @@ namespace Tool.Client.Tools
                     };
 
                     for (int i = 0; i < 100; i++)
-                        table.Rows.Add(new TableRow() { Id = i.ToString(), Info = new Dictionary<string, string>() { { "Name", "Row: " + i}, { "Value", "Value " + i }, { "Extra data", "Some additional data for row " + i } }, Values = new List<string>() { "Row" + i,  i.ToString(), "use arrows of page up or page down to scroll",  DateTime.Now.AddDays(-i).ToShortDateString()  } } );
+                        table.Rows.Add(new TableRow() { 
+                            Id = i.ToString(), 
+                            GroupHeader = i % 10 == 0 ? "Section" : null, 
+                            Color = i % 10 == 0 ? ConsoleColor.DarkCyan : i % 2 == 0 ? ConsoleColor.DarkYellow : ConsoleColor.Gray,  
+                            Info = new Dictionary<string, string>() { { "Name", "Row: " + i}, { "Value", "Value " + i }, { "Extra data", "Some additional data for row " + i } }, 
+                            Values = new List<string>() { "Row" + i,  i.ToString(), "use arrows of page up or page down to scroll",  DateTime.Now.AddDays(-i).ToShortDateString()  } } );
 
                     ToolsManager.LoadTable(table);
 

@@ -20,5 +20,8 @@ namespace Tool.Manager.GUI
         public Dictionary<string, string> Info { get; set; }
 
         public string Id { get; set; }
+
+        public ConsoleColor Color { get; set; } = ConsoleColor.Gray;
+
     }
 }
