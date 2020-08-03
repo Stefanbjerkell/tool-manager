@@ -239,7 +239,7 @@ namespace Tool.Manager
                         if (ActiveTab == Tab.Top)
                         {
                             var info = new List<InfoRow>();
-                            info.Add(new InfoRow("Global Data", "Flobal Data", InfoRowType.Title));
+                            info.Add(new InfoRow("Global Data", "Global Data", InfoRowType.Title));
 
                             if (Settings.Info is object)
                             {
