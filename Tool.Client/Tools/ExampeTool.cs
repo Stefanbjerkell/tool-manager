@@ -20,7 +20,7 @@ namespace Tool.Client.Tools
                 new ToolsAction("Test Action", "test", TestAction).AddOption("text", "t", true).AddOption("message", "m"),
                 new ToolsAction("Table", "table", Table),
                 new ToolsAction("Draw Top", "top", DrawTop),
-                new ToolsAction("Config", "config", Config).AddOption("file", "f", true, "Please select a file for the new configuration")
+                new ToolsAction("Config", "config", Config).AddOption("config", "f", true, "Please select a file for the new configuration")
             };
             Documentation = new List<Documentation>()
             {
@@ -91,7 +91,8 @@ namespace Tool.Client.Tools
 
         private static async Task Config(Dictionary<string, string> options)
         {
-            options.TryGetValue("value", out string file);
+            options.TryGetValue("config", out string file);
+            ToolsManager.Log($"[s]Loading: {file}");
             var config = new ConfigurationBuilder().AddJsonFile(file).Build();
             ToolsManager.SetConfiguration(config);
         }

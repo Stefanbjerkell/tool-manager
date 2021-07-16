@@ -699,7 +699,7 @@ namespace Tool.Manager
                     if (action is object)
                     {
                         var options = new Dictionary<string, string>();
-                        var value = args.Length > 1 && args[1].StartsWith("-") ? args[1] : "";
+                        var value = args.Length > 1 && !args[1].StartsWith("-") ? args[1] : "";
                         if (!string.IsNullOrEmpty(value))
                         {
                             options.Add(action.Command, value);
