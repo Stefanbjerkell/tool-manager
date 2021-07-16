@@ -17,6 +17,8 @@ namespace Tool.Manager.Interfaces
 
         List<Documentation> Documentation { get; set; }
 
+        List<ToolsAction> Actions { get; set; }
+
         Task Run();
 
         void Configure(IConfigurationRoot config);
@@ -29,7 +31,54 @@ namespace Tool.Manager.Interfaces
 
     }
 
-    public class ToolsSettings
+    public delegate Task ToolsActionMethod(Dictionary<string, string> options);
+
+    public class ToolsAction
+    {
+        public ToolsAction(string name, string command, ToolsActionMethod action, string description = "")
+        {
+            Name = name;
+            Command = command;
+            Action = action;
+            Description = description;
+        }
+
+        public ToolsAction AddOption(string name, string shortName = "", bool required = false, string promt = null)
+        {
+            Options.Add(new ToolsActionOption()
+            {
+                Option = name,
+                Short = shortName,
+                Required = required,
+                Promt = promt
+            });
+
+            return this;
+        }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public string Command { get; set; }
+
+        public ToolsActionMethod Action { get; set; }
+
+        public List<ToolsActionOption> Options { get; set; } = new List<ToolsActionOption>();
+    }
+
+    public class ToolsActionOption
+    {
+        public string Option { get; set; }
+
+        public string Short { get; set; }
+
+        public bool Required { get; set; }
+
+        public string Promt { get; set; }
+    }
+
+    public class ToolsGlobalSettings
     {
         public string Title { get; set; }
 

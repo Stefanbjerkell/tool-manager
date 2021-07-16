@@ -15,7 +15,7 @@ namespace Tool.Manager
         private static List<ITool> _tools;
 
         public static IConfigurationRoot Config;
-        public static ToolsSettings Settings;
+        public static ToolsGlobalSettings Settings;
 
         private static bool Runnig = true;
 
@@ -44,7 +44,7 @@ namespace Tool.Manager
         /// <param name="config"></param>
         public static void Configure(IServiceProvider serviceProvider, IConfigurationRoot config)
         {
-            Settings = new ToolsSettings();
+            Settings = new ToolsGlobalSettings();
             if (File.Exists("documentation.json"))
             {
                 var json = File.ReadAllText("documentation.json");
@@ -122,6 +122,20 @@ namespace Tool.Manager
             {
                 tool.Configure(config);
             }
+        }
+
+
+        public static void ListActions(List<ToolsAction> Actions, string header = "Actions")
+        {
+            RunMenu(new Menu()
+            {
+                Title = header,
+                Items = Actions.Select(x => new MenuItem()
+                {
+                    Text = x.Name,
+                    Value = x.Command
+                }).ToList()
+            });
         }
 
         /// <summary>
@@ -224,11 +238,12 @@ namespace Tool.Manager
                                     return;
                                 }
 
-                                if (MenuExecute(SelectedMenuItem))
+                                if (ProcessCommand(SelectedMenuItem.Value) || MenuExecute(SelectedMenuItem))
                                 {
                                     Menu = menu;
                                     SelectedMenuItem = null;
                                     Display.DrawMenu(Menu);
+                                    continue;
                                 }
                             }
                         if (ActiveTab == Tab.Data)
@@ -320,7 +335,7 @@ namespace Tool.Manager
             if (char.IsLetterOrDigit(key.KeyChar) && Table != null)
             {
                 TableFilter += key.KeyChar;
-                
+
                 var row = Table.Rows.FirstOrDefault(x => string.IsNullOrEmpty(x.GroupHeader) && x.Values.Any(r => r.ToLower().Contains(TableFilter.ToLower())));
 
                 if (row is object)
@@ -329,7 +344,7 @@ namespace Tool.Manager
                     var index = Table.Rows.IndexOf(row);
                     var pageOfRow = index / maxRows;
 
-                    if(pageOfRow == TablePage)
+                    if (pageOfRow == TablePage)
                     {
                         var oldSelection = SelectedTalbeRow;
                         if (oldSelection is object && pageOfRow == TablePage)
@@ -341,7 +356,7 @@ namespace Tool.Manager
                         SelectedTalbeRow = row;
                         TablePage = pageOfRow;
                         Display.DrawTable(Table, TablePage);
-                    }                    
+                    }
                     Display.RowSelect(SelectedTalbeRow, index - (maxRows * TablePage));
                 }
             }
@@ -514,6 +529,7 @@ namespace Tool.Manager
                 if (ActiveTool is object)
                 {
 
+
                     if (ActiveTool.ExecuteMenuItem(item).Result)
                         return true;
                 }
@@ -677,8 +693,47 @@ namespace Tool.Manager
             {
                 try
                 {
-                    if (ActiveTool.ExecuteCommand(command).Result)
+                    var args = command.Split(" ");
+                    var action = ActiveTool.Actions.FirstOrDefault(x => x.Command.ToLower() == args[0].ToLower());
+
+                    if (action is object)
+                    {
+                        var options = new Dictionary<string, string>();
+                        var value = args.Length > 1 && args[1].StartsWith("-") ? args[1] : "";
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            options.Add(action.Command, value);
+                        }
+                        if (args.Length > 1)
+                        {
+                            for (int i = 1; i < args.Length; i++)
+                            {
+                                if (args[i].StartsWith("-"))
+                                {
+                                    var o = args[i].Substring(1);
+                                    var option = action.Options.FirstOrDefault(x => x.Short == o || x.Option == o);
+
+                                    if (option is object)
+                                    {
+                                        var v = args[i + 1].StartsWith("-") ? "" : args[i + 1];
+                                        options.Add(option.Option, v);
+                                    }
+
+                                }
+                            }
+                        }
+
+                        foreach(var option in action.Options)
+                        {
+                            if(option.Required && !options.ContainsKey(option.Option))
+                            {
+                                options.Add(option.Option, PromtInput(option.Promt ?? option.Option));
+                            }
+                        }
+
+                        action.Action(options);
                         return true;
+                    }
                 }
                 catch (Exception ex)
                 {

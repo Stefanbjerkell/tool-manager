@@ -405,7 +405,7 @@ namespace Tool.Manager.GUI
             }
         }
 
-        public static void DrawTop(ToolsSettings settings)
+        public static void DrawTop(ToolsGlobalSettings settings)
         {
             var pos = new Point(1, 1);
 
