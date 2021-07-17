@@ -8,7 +8,7 @@
     <Description>Help for building and running console tools. Includes a menu system and have support for drawing tables with scrolling and selecting rows.</Description>
     <Copyright />
     <PackageId>Console.Tool.Manager</PackageId>
-    <Version>1.0.36</Version>
+    <Version>1.1.0</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/Stefanbjerkell/tool-manager</RepositoryUrl>
     <RepositoryType>public github</RepositoryType>
