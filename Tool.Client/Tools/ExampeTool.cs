@@ -17,10 +17,9 @@ namespace Tool.Client.Tools
         {
             Actions = new List<ToolsAction>()
             {
-                new ToolsAction("Test Action", "test", TestAction).AddOption("text", "t", true).AddOption("message", "m"),
-                new ToolsAction("Table", "table", Table),
-                new ToolsAction("Draw Top", "top", DrawTop),
-                new ToolsAction("Config", "config", Config).AddOption("config", "f", true, "Please select a file for the new configuration")
+                new ToolsAction("Table", "table", Table, "Draws paginated table that you can scroll through"),
+                new ToolsAction("Draw Top", "top", DrawTop, "Shows some data up in the header section"),
+                new ToolsAction("Config", "config", Config, "This will load a new configruation file").AddOption("config", "f", true, "Please select a file for the new configuration")
             };
             Documentation = new List<Documentation>()
             {
